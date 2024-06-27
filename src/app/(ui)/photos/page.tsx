@@ -1,9 +1,23 @@
-import { db } from "@/server/db";
 import { PhotosList } from "./PhotosList";
-import { api } from "@/trpc/server";
+import { Suspense } from "react";
+import { Center, Loader, Space, Text } from "@mantine/core";
 
 export default function PhotosPage() {
-  const photos = api.storage.fetchFiles.query();
+  // const photos = api.storage.fetchFiles.query();
 
-  return <PhotosList />;
+  return (
+    <>
+      <Text size="lg">Uploaded Photos:</Text>
+      <Space h={"sm"} />
+      <Suspense
+        fallback={
+          <Center>
+            <Loader />
+          </Center>
+        }
+      >
+        <PhotosList />
+      </Suspense>
+    </>
+  );
 }

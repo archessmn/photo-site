@@ -67,7 +67,7 @@ model VerificationToken {
 }
 
 model File {
-    id           String   @id @default(uuid())
+    id           String   @id @default(cuid())
     bucket       String
     fileName     String   @unique
     originalName String
@@ -75,5 +75,20 @@ model File {
     createdAt    DateTime @default(now())
     size         Int
 
+    downscaledImages DownscaledImage[]
+
     @@map("files")
+}
+
+model DownscaledImage {
+    id          String  @id @default(cuid())
+    fileId      String
+    bucket      String
+    fileName    String   @unique
+    file        File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+    resolution  Int
+    createdAt   DateTime @default(now())
+    size        Int
+
+    @@map("downscaled_images")
 }

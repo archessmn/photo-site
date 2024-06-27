@@ -8,6 +8,7 @@ import {
 import { createBucketIfNotExists, s3Client } from "@/utils/minio";
 import { File } from "@prisma/client";
 import { env } from "@/env";
+import { resizeS3Upload } from "@/utils/photos";
 
 export const storageRouter = createTRPCRouter({
   createPresignedUrlToUpload: publicProcedure
@@ -28,12 +29,13 @@ export const storageRouter = createTRPCRouter({
           originalName: input.fileName,
           size: -1,
           fileName: "",
+          presignedUrl: "",
         },
       });
 
       const presignedUrl = await s3Client.presignedPutObject(
         env.S3_BUCKET_NAME,
-        `uploads/${fileUpload.id}`,
+        `uploads/${fileUpload.id}/original`,
         input.expiry,
       );
 
@@ -52,16 +54,26 @@ export const storageRouter = createTRPCRouter({
     )
     .output(z.object({ ok: z.boolean() }))
     .mutation(async ({ input, ctx }) => {
+      const presignedUrl = await s3Client.presignedGetObject(
+        env.S3_BUCKET_NAME,
+        `uploads/${input.id}/original`,
+      );
+
       await ctx.db.file.update({
         where: {
           id: input.id,
         },
         data: {
-          fileName: `uploads/${input.id}`,
+          fileName: `uploads/${input.id}/original`,
           status: input.success ? "uploaded" : "failed",
           size: input.success ? input.size : -1,
+          presignedUrl: input.success ? presignedUrl : "",
         },
       });
+
+      if (input.success) {
+        resizeS3Upload(input.id);
+      }
 
       return {
         ok: true,
@@ -79,5 +91,32 @@ export const storageRouter = createTRPCRouter({
       });
 
       return photos;
+    }),
+  getPresignedUrlToView: publicProcedure
+    .input(z.object({ fileId: z.string() }))
+    .output(z.object({ ok: z.boolean(), url: z.string().optional() }))
+    .query(async ({ input, ctx }) => {
+      const file = await ctx.db.file.findUnique({
+        where: {
+          id: input.fileId,
+        },
+      });
+
+      if (file == null) {
+        return {
+          ok: false,
+        };
+      }
+
+      const presignedUrl = await s3Client.presignedGetObject(
+        file.bucket,
+        file.fileName,
+        60 * 60,
+      );
+
+      return {
+        ok: true,
+        url: presignedUrl,
+      };
     }),
 });
