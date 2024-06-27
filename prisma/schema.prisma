@@ -15,19 +15,6 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
-    @@map("posts")
-}
-
 // Necessary for Next auth
 model Account {
     id                String  @id @default(cuid())
@@ -66,10 +53,6 @@ model User {
     image         String?
     accounts      Account[]
     sessions      Session[]
-    posts         Post[]
-    createdModules  Module[]
-    createdDepartments  Department[]
-    createdActivities   Activity[]
 
     @@map("users")
 }
@@ -83,115 +66,14 @@ model VerificationToken {
     @@map("verification_tokens")
 }
 
-model Module {
-    id          String      @id @default(cuid())
-    code        String
-    description String?
+model File {
+    id           String   @id @default(uuid())
+    bucket       String
+    fileName     String   @unique
+    originalName String
+    status       String
+    createdAt    DateTime @default(now())
+    size         Int
 
-    departmentId    String
-    createdById String
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    department  Department? @relation(fields: [departmentId], references: [id])
-
-    activities  Activity[]
-    groups      ModuleGroup[]
-
-    @@map("modules")
-}
-
-model Department {
-    id          String      @id @default(cuid())
-    name        String
-    createdById String
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    modules     Module[]
-    activities  Activity[]
-
-    @@map("departments")
-}
-
-model Activity {
-    id          String      @id @default(cuid())
-    description String
-    startDateTime   DateTime
-    endDateTime     DateTime
-    duration    String
-    type        String
-    staff       String?
-    location    String
-    size        Int?
-    reference   String
-    details     String?
-
-    moduleId    String?
-    departmentId    String?
-    createdById String
-    weekNameId  String?
-    groupId     String?
-
-    module      Module?         @relation(fields: [moduleId], references: [id])
-    department  Department?     @relation(fields: [departmentId], references: [id])
-    createdBy   User            @relation(fields: [createdById], references: [id])
-    weekName    WeekName?       @relation(fields: [weekNameId], references: [id])
-    group       ModuleGroup?   @relation(fields: [groupId], references: [id])
-
-    checkinCodes    CheckinCode[]   @relation()
-    externalActivities  ExternalActivity[]
-
-    @@map("activities")
-}
-
-model CheckinCode {
-    id          String      @id @default(cuid())
-    code        String
-    score       Int         @default(0)
-    submittedAt DateTime?   @default(now())
-
-    activityId  String?
-    activity    Activity?    @relation(fields: [activityId], references: [id])
-
-    externalActivityId  String?
-    externalActivity    ExternalActivity?    @relation(fields: [externalActivityId], references: [id])
-
-    @@map("checkin_codes")
-}
-
-model WeekName {
-    id          String      @id @default(cuid())
-    name        String
-
-    activities  Activity[]
-
-    @@map("week_names")
-}
-
-model ModuleGroup {
-    id          String      @id @default(cuid())
-    groupNumber Int
-    
-    moduleId    String
-
-    module      Module      @relation(fields: [moduleId], references: [id])
-
-    activities  Activity[]
-
-    @@map("module_groups")
-}
-
-model ExternalActivity {
-    id          String      @id @default(cuid())
-    time        String
-    activity    String
-    lecturer    String?
-    space       String
-    date        DateTime
-
-    internalActivityId  String?
-    internalActivity    Activity?    @relation(fields: [internalActivityId], references: [id])
-
-    checkinCodes    CheckinCode[]
-
-
-    @@map("external_activities")
+    @@map("files")
 }

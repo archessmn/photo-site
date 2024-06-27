@@ -3,8 +3,8 @@
 import { AppShell, Burger, Group, NavLink } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { ThemeSwitcher } from "../theme-switcher";
-import { LuBook, LuCalendar, LuHome, LuWrench } from "react-icons/lu";
-import { IoLogoJavascript } from "react-icons/io5";
+import { LuBook, LuCalendar, LuHome, LuUpload, LuWrench } from "react-icons/lu";
+import { IoMdPhotos } from "react-icons/io";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -52,44 +52,20 @@ export function GenericAppShell(props: { children: React.ReactNode }) {
         />
         <NavLink
           component={Link}
-          href={"/docs/userscript"}
-          leftSection={<IoLogoJavascript size="1rem" />}
-          label="Userscript Docs"
+          href={"/upload"}
+          leftSection={<LuUpload size="1rem" />}
+          label="Upload Photo"
           onClick={toggleMobile}
-          active={pathname === "/docs/userscript"}
+          active={pathname === "/upload"}
         />
         <NavLink
           component={Link}
-          href={"/timetable"}
-          leftSection={<LuCalendar size="1rem" />}
-          label="Timetable"
+          href={"/photos"}
+          leftSection={<IoMdPhotos size="1rem" />}
+          label="View Photos"
           onClick={toggleMobile}
-          active={pathname === "/timetable"}
+          active={pathname === "/photos"}
         />
-        <NavLink
-          component={Link}
-          href={"/modules"}
-          leftSection={<LuBook size="1rem" />}
-          label="Modules"
-          onClick={toggleMobile}
-          active={pathname?.startsWith("/modules")}
-        />
-        <NavLink
-          component={Link}
-          href={"/admin"}
-          leftSection={<LuWrench size="1rem" />}
-          label="Admin Stuff"
-          active={pathname === "/admin"}
-        >
-          <NavLink
-            component={Link}
-            href={"/admin/timetable/upload"}
-            label="Upload Timetable"
-            onClick={toggleMobile}
-            active={pathname === "/admin/timetable/upload"}
-          />
-        </NavLink>
-
         <ThemeSwitcher className={"mt-auto"} />
       </AppShell.Navbar>
 

@@ -32,7 +32,12 @@ export const env = createEnv({
     OAUTH_CLIENT_ID: z.string(),
     OAUTH_CLIENT_SECRET: z.string(),
     OAUTH_ISSUER_URL: z.string(),
-    AUTOFILL_ENABLED: z.string().default("false"),
+    S3_ENDPOINT: z.string(),
+    S3_BUCKET_NAME: z.string(),
+    S3_PORT: z.number().optional(),
+    S3_ACCESS_KEY: z.string(),
+    S3_SECRET_KEY: z.string(),
+    S3_USE_SSL: z.string().optional(),
   },
 
   /**
@@ -57,7 +62,12 @@ export const env = createEnv({
     OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID,
     OAUTH_CLIENT_SECRET: process.env.OAUTH_CLIENT_SECRET,
     OAUTH_ISSUER_URL: process.env.OAUTH_ISSUER_URL,
-    AUTOFILL_ENABLED: process.env.AUTOFILL_ENABLED,
+    S3_ENDPOINT: process.env.S3_ENDPOINT,
+    S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
+    S3_PORT: process.env.S3_PORT,
+    S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
+    S3_SECRET_KEY: process.env.S3_SECRET_KEY,
+    S3_USE_SSL: process.env.S3_USE_SSL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
