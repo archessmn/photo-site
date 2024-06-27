@@ -12,7 +12,7 @@ export default function UploadPage() {
   return <PictureUploadForm />;
 }
 
-export function PictureUploadForm() {
+function PictureUploadForm() {
   const form = useForm({
     initialValues: {
       file: null,

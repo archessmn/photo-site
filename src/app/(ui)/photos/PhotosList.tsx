@@ -1,18 +1,24 @@
+"use client";
+
+import { api } from "@/trpc/react";
 import { Card, LoadingOverlay, Stack, Text } from "@mantine/core";
 import { File } from "@prisma/client";
 import { Suspense, use } from "react";
 
-export function PhotosList(props: { files: Promise<File[]> }) {
+export function PhotosList() {
+  const photos = api.storage.fetchFiles.useQuery({});
+
   return (
     <Suspense fallback={<LoadingOverlay />}>
       <Stack>
-        {use(props.files).map((file) => {
-          return (
-            <Card>
-              <Text>{file.originalName}</Text>
-            </Card>
-          );
-        })}
+        {photos.isSuccess &&
+          photos.data.map((file) => {
+            return (
+              <Card key={file.id}>
+                <Text>{file.originalName}</Text>
+              </Card>
+            );
+          })}
       </Stack>
     </Suspense>
   );
