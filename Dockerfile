@@ -4,6 +4,8 @@ FROM --platform=linux/amd64 node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
+LABEL org.opencontainers.image.source https://github.com/archessmn/photo-site
+
 # Install Prisma Client - remove if not using Prisma
 
 COPY prisma ./
