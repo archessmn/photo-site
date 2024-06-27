@@ -4,7 +4,7 @@ import { env } from "@/env";
 
 // Create a new Minio client with the S3 endpoint, access key, and secret key
 export const s3Client = new Minio.Client({
-  endPoint: env.S3_ENDPOINT,
+  endPoint: env.S3_ENDPOINT ?? "play.min.io",
   port: env.S3_PORT ? Number(env.S3_PORT) : undefined,
   accessKey: env.S3_ACCESS_KEY,
   secretKey: env.S3_SECRET_KEY,
