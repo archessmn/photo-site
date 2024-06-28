@@ -90,24 +90,6 @@ export async function resizeS3Upload(id: string) {
   });
 }
 
-export async function resizeS3UploadBetter(id: string) {
-  const file = await db.file.findUnique({
-    where: {
-      id: id,
-    },
-  });
-
-  if (!file) {
-    return {
-      ok: false,
-    };
-  }
-
-  s3Client.getObject(file.bucket, file.fileName).then((data) => {
-    sharp(data.read());
-  });
-}
-
 async function uploadAndSave(data: {
   err: Error;
   info: sharp.OutputInfo;
