@@ -6,8 +6,10 @@ import { Suspense } from "react";
 
 export function PhotoBox(props: { fileId: string }) {
   const [urlResponse, urlResponseQuery] =
-    api.storage.getPresignedUrlToView.useSuspenseQuery({
+    api.photo.getPhotoPresignedUrl.useSuspenseQuery({
       fileId: props.fileId,
+      type: "webp",
+      size: "1024",
     });
 
   if (!urlResponse.ok) {

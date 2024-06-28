@@ -1,10 +1,12 @@
 "use client";
 
+import { S3Image } from "@/app/_components/S3Image";
 import { api } from "@/trpc/react";
 import {
   ActionIcon,
   Box,
   Card,
+  Center,
   Group,
   Image,
   Stack,
@@ -26,12 +28,21 @@ export function PhotosList() {
         return (
           <Card key={file.id}>
             {/* <Box h={50} w={50}> */}
-            <Suspense>
-              <PhotoSrc fileId={file.id} />
-            </Suspense>
             {/* </Box> */}
             <Group>
-              <Text>{file.originalName}</Text>
+              <Box h={64} w={64}>
+                <Center>
+                  <Suspense>
+                    <S3Image id={file.id} h={64} />
+                  </Suspense>
+                </Center>
+              </Box>
+              <Stack>
+                <Text>{file.originalName}</Text>
+                <Text c={"dimmed"} size="xs">
+                  {file.id}
+                </Text>
+              </Stack>
               <ActionIcon
                 onClick={() => {
                   router.push(`/photos/${file.id}`);
@@ -48,16 +59,16 @@ export function PhotosList() {
   );
 }
 
-function PhotoSrc(props: { fileId: string }) {
-  const [url, urlQuery] = api.photo.getPhotoPresignedUrl.useSuspenseQuery({
-    fileId: props.fileId,
-    size: "128",
-    type: "webp",
-  });
+// function PhotoSrc(props: { fileId: string }) {
+//   const [url, urlQuery] = api.photo.getPhotoPresignedUrl.useSuspenseQuery({
+//     fileId: props.fileId,
+//     size: "128",
+//     type: "webp",
+//   });
 
-  return (
-    <>
-      <Image src={url.url} h={50} w={50} />
-    </>
-  );
-}
+//   return (
+//     <>
+//       <Image src={url.url} h={50} w={50} />
+//     </>
+//   );
+// }

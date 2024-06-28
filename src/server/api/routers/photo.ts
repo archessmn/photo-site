@@ -1,14 +1,6 @@
-import { string, z } from "zod";
-
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from "@/server/api/trpc";
-import { createBucketIfNotExists, s3Client } from "@/utils/minio";
-import { File } from "@prisma/client";
-import { env } from "@/env";
-import { resizeS3Upload } from "@/utils/photos";
+import { z } from "zod";
+import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { s3Client } from "@/utils/minio";
 
 export const photoRouter = createTRPCRouter({
   getPhotoPresignedUrl: publicProcedure
@@ -51,15 +43,9 @@ export const photoRouter = createTRPCRouter({
           60 * 60,
         );
       } else {
-        console.log(photo.downscaledImages);
-        console.log(type);
-        console.log(size);
-
         const correctDownscale = photo.downscaledImages.find(
           (entry) => entry.fileName.endsWith(type) && entry.resolution <= size,
         );
-
-        console.log(correctDownscale);
 
         if (!correctDownscale) {
           presignedGetUrl = await s3Client.presignedGetObject(

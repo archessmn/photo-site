@@ -9,6 +9,7 @@ import { createBucketIfNotExists, s3Client } from "@/utils/minio";
 import { File } from "@prisma/client";
 import { env } from "@/env";
 import { resizeS3Upload } from "@/utils/photos";
+import { BucketItemStat } from "minio";
 
 export const storageRouter = createTRPCRouter({
   createPresignedUrlToUpload: publicProcedure
@@ -16,7 +17,11 @@ export const storageRouter = createTRPCRouter({
     //   openapi: { method: "GET", path: "/s3/presignedUrl", tags: ["test"] },
     // })
     .input(
-      z.object({ fileName: z.string(), expiry: z.number().default(60 * 60) }),
+      z.object({
+        fileName: z.string(),
+        expiry: z.number().default(60 * 60),
+        orientation: z.enum(["portrait", "landscape", "square"]),
+      }),
     )
     .output(z.object({ url: z.string(), id: z.string() }))
     .mutation(async ({ input, ctx }) => {
@@ -29,7 +34,8 @@ export const storageRouter = createTRPCRouter({
           originalName: input.fileName,
           size: -1,
           fileName: "",
-          presignedUrl: "",
+          orientation: input.orientation,
+          etag: "",
         },
       });
 
@@ -54,10 +60,14 @@ export const storageRouter = createTRPCRouter({
     )
     .output(z.object({ ok: z.boolean() }))
     .mutation(async ({ input, ctx }) => {
-      const presignedUrl = await s3Client.presignedGetObject(
-        env.S3_BUCKET_NAME,
-        `uploads/${input.id}/original`,
-      );
+      let s3Stat: BucketItemStat | undefined = undefined;
+
+      if (input.success) {
+        s3Stat = await s3Client.statObject(
+          env.S3_BUCKET_NAME,
+          `uploads/${input.id}/original`,
+        );
+      }
 
       await ctx.db.file.update({
         where: {
@@ -66,8 +76,8 @@ export const storageRouter = createTRPCRouter({
         data: {
           fileName: `uploads/${input.id}/original`,
           status: input.success ? "uploaded" : "failed",
-          size: input.success ? input.size : -1,
-          presignedUrl: input.success ? presignedUrl : "",
+          size: s3Stat ? s3Stat.size : -1,
+          etag: s3Stat?.etag,
         },
       });
 

@@ -73,6 +73,8 @@ model File {
     originalName String
     status       String
     createdAt    DateTime @default(now())
+    orientation  String
+    etag         String
     size         Int
 
     downscaledImages DownscaledImage[]

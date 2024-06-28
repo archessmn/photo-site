@@ -11,6 +11,10 @@ import sharp from "sharp";
 import { env } from "@/env";
 import { File } from "@prisma/client";
 
+// Must contain 128 as it is the default fallback until I fix it
+// Must also be in ascending order
+export const IMAGE_SIZES = [128, 256, 512, 1024];
+
 export async function resizeS3Upload(id: string) {
   const file = await db.file.findUnique({
     where: {
@@ -27,50 +31,40 @@ export async function resizeS3Upload(id: string) {
   const tempPath = `${process.cwd()}/temp`;
   const filePath = `${tempPath}/${id}`;
 
-  const presignedUrl = await s3Client.presignedGetObject(
-    file.bucket,
-    file.fileName,
-    60 * 60,
-  );
-
-  const fileResponse = await fetch(presignedUrl);
-
-  if (!fileResponse.body) {
-    return {
-      ok: false,
-    };
-  }
+  const fileObject = await s3Client.getObject(file.bucket, file.fileName);
 
   if (!existsSync(tempPath)) await mkdir(tempPath);
   if (!existsSync(filePath)) await mkdir(filePath);
 
   const originalDestination = path.resolve(filePath, "original");
 
+  let finalDestination = originalDestination;
+
   const fileStream = createWriteStream(originalDestination, { flags: "wx" });
 
-  await finished(
-    Readable.fromWeb(fileResponse.body as ReadableStream<any>).pipe(fileStream),
-  );
+  await finished(fileObject.pipe(fileStream));
 
-  if (!existsSync(`${filePath}/png`)) await mkdir(`${filePath}/png`);
+  let image = sharp(originalDestination).keepMetadata();
+  const imageMeta = await image.metadata();
+
+  const orientation =
+    (imageMeta.width ?? 0) > (imageMeta.height ?? 0) ? "landscape" : "portrait";
+
+  if (orientation !== file.orientation) {
+    finalDestination += "-rotated";
+    image = image.rotate(90);
+    await image.toFile(finalDestination);
+  }
+
   if (!existsSync(`${filePath}/webp`)) await mkdir(`${filePath}/webp`);
+  if (!existsSync(`${filePath}/jpg`)) await mkdir(`${filePath}/jpg`);
 
   // [128].map((size) => {
-  [128, 256, 512, 1024].map((size) => {
-    sharp(originalDestination)
-      .resize(size, size, { fit: "inside" })
+  IMAGE_SIZES.map((size) => {
+    sharp(finalDestination)
       .keepExif()
-      .png()
-      .toFile(path.resolve(filePath, `png/${size}.png`), async (err, info) => {
-        uploadAndSave({
-          err,
-          info,
-          file,
-          filePath,
-          size,
-          extension: "png",
-        });
-      })
+      .withMetadata()
+      .resize(size, size, { fit: "inside" })
       .webp()
       .toFile(path.resolve(filePath, `webp/${size}.webp`), (err, info) => {
         uploadAndSave({
@@ -81,7 +75,36 @@ export async function resizeS3Upload(id: string) {
           size,
           extension: "webp",
         });
+      })
+      .jpeg()
+      .toFile(path.resolve(filePath, `jpg/${size}.jpg`), async (err, info) => {
+        uploadAndSave({
+          err,
+          info,
+          file,
+          filePath,
+          size,
+          extension: "jpg",
+        });
       });
+  });
+}
+
+export async function resizeS3UploadBetter(id: string) {
+  const file = await db.file.findUnique({
+    where: {
+      id: id,
+    },
+  });
+
+  if (!file) {
+    return {
+      ok: false,
+    };
+  }
+
+  s3Client.getObject(file.bucket, file.fileName).then((data) => {
+    sharp(data.read());
   });
 }
 
@@ -93,10 +116,7 @@ async function uploadAndSave(data: {
   file: File;
   extension: string;
 }) {
-  console.log(`Attempting to upload ${data.filePath}`);
-
   if (data.err == null) {
-    console.log("No apparent error in image conversion");
     const imageFile = await readFile(
       path.resolve(
         data.filePath,
@@ -106,32 +126,17 @@ async function uploadAndSave(data: {
 
     const resizedS3Path = `resized/${data.file.id}/${data.extension}/${data.size}.${data.extension}`;
 
-    const presignedPutUrl = await s3Client.presignedPutObject(
+    const putResponse = await s3Client.putObject(
       env.S3_BUCKET_NAME,
       resizedS3Path,
-      60 * 60,
+      imageFile,
     );
 
-    const putResponse = await fetch(presignedPutUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": `image/${data.extension}`,
-      },
-      body: imageFile,
-    });
-
-    if (putResponse.status == 200) {
-      const presignedGetUrl = await s3Client.presignedGetObject(
-        env.S3_BUCKET_NAME,
-        resizedS3Path,
-        60 * 60,
-      );
-
+    if (putResponse.etag) {
       await db.downscaledImage.create({
         data: {
           bucket: env.S3_BUCKET_NAME,
           fileName: resizedS3Path,
-          presignedUrl: presignedGetUrl,
           resolution: data.size,
           size: data.info.size,
           file: { connect: { id: data.file.id } },

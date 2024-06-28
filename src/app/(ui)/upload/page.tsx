@@ -45,9 +45,14 @@ function PictureUploadForm() {
             });
           }
           if (value?.name) {
+            const orientation = await getImageOrientation(value);
+
+            console.log(orientation);
+
             const presignedUrlResponse =
               await createPresignedUrlToUpload.mutateAsync({
                 fileName: value.name,
+                orientation,
               });
 
             const presignedUrl = presignedUrlResponse.url;
@@ -107,4 +112,31 @@ function PictureUploadForm() {
       </form>
     </Box>
   );
+}
+
+function getImageOrientation(image: File) {
+  return new Promise<"square" | "landscape" | "portrait">((resolve, reject) => {
+    var fr = new FileReader();
+
+    fr.onload = function () {
+      // file is loaded
+      var img = new Image();
+
+      img.onload = function () {
+        console.log("Resolving!!");
+
+        if (img.width == img.height) resolve("square");
+
+        resolve(img.width > img.height ? "landscape" : "portrait"); // image is loaded; sizes are available
+      };
+
+      if (!fr.result) {
+        return reject();
+      }
+
+      img.src = fr.result!.toString(); // is the data URL because called with readAsDataURL
+    };
+
+    fr.readAsDataURL(image);
+  });
 }
